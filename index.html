@@ -1,0 +1,349 @@
+import docx
+from docx.shared import Inches, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
+from docx.oxml import parse_xml, OxmlElement
+from docx.oxml.ns import nsdecls, qn
+
+def create_modul_ajar():
+    doc = docx.Document()
+    
+    # Page setup - A4 with standard margins (2.54 cm / 1 inch)
+    section = doc.sections[0]
+    section.page_width = Inches(8.27)
+    section.page_height = Inches(11.69)
+    section.top_margin = Inches(1.0)
+    section.bottom_margin = Inches(1.0)
+    section.left_margin = Inches(1.0)
+    section.right_margin = Inches(1.0)
+    
+    # Styling Constants
+    PRIMARY_COLOR = RGBColor(27, 54, 93)     # Navy Blue (#1B365D)
+    SECONDARY_COLOR = RGBColor(0, 128, 128)  # Teal (#008080)
+    DARK_TEXT = RGBColor(51, 51, 51)        # Charcoal (#333333)
+    HEX_PRIMARY = "1B365D"
+    HEX_LIGHT_BG = "F0F4F8"
+    HEX_BORDER = "CCCCCC"
+    
+    # Set default font
+    style_normal = doc.styles['Normal']
+    font = style_normal.font
+    font.name = 'Arial'
+    font.size = Pt(11)
+    font.color.rgb = DARK_TEXT
+    
+    def set_cell_margins(cell, top=100, bottom=100, left=150, right=150):
+        tcPr = cell._tc.get_or_add_tcPr()
+        tcMar = OxmlElement('w:tcMar')
+        for m, val in [('top', top), ('bottom', bottom), ('left', left), ('right', right)]:
+            node = OxmlElement(f'w:{m}')
+            node.set(qn('w:w'), str(val))
+            node.set(qn('w:type'), 'dxa')
+            tcMar.append(node)
+        tcPr.append(tcMar)
+        
+    def set_cell_background(cell, hex_color):
+        shading_elm = parse_xml(f'<w:shd {nsdecls("w")} w:fill="{hex_color}"/>')
+        cell._tc.get_or_add_tcPr().append(shading_elm)
+
+    def set_table_borders(table):
+        tblPr = table._tbl.tblPr
+        borders = parse_xml(
+            f'<w:tblBorders {nsdecls("w")}>'
+            f'<w:top w:val="single" w:sz="4" w:space="0" w:color="{HEX_BORDER}"/>'
+            f'<w:bottom w:val="single" w:sz="4" w:space="0" w:color="{HEX_BORDER}"/>'
+            f'<w:left w:val="none"/>'
+            f'<w:right w:val="none"/>'
+            f'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="{HEX_BORDER}"/>'
+            f'<w:insideV w:val="none"/>'
+            f'</w:tblBorders>'
+        )
+        tblPr.append(borders)
+
+    def add_heading_1(text):
+        p = doc.add_paragraph()
+        p.paragraph_format.space_before = Pt(14)
+        p.paragraph_format.space_after = Pt(6)
+        p.paragraph_format.keep_with_next = True
+        run = p.add_run(text)
+        run.font.name = 'Arial'
+        run.font.size = Pt(14)
+        run.font.bold = True
+        run.font.color.rgb = PRIMARY_COLOR
+        return p
+
+    def add_heading_2(text):
+        p = doc.add_paragraph()
+        p.paragraph_format.space_before = Pt(10)
+        p.paragraph_format.space_after = Pt(4)
+        p.paragraph_format.keep_with_next = True
+        run = p.add_run(text)
+        run.font.name = 'Arial'
+        run.font.size = Pt(12)
+        run.font.bold = True
+        run.font.color.rgb = SECONDARY_COLOR
+        return p
+
+    # --- TITLE SECTION ---
+    p_title = doc.add_paragraph()
+    p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_title.paragraph_format.space_after = Pt(2)
+    run_title = p_title.add_run("MODUL AJAR KURIKULUM MERDEKA")
+    run_title.font.size = Pt(18)
+    run_title.font.bold = True
+    run_title.font.color.rgb = PRIMARY_COLOR
+    
+    p_sub = doc.add_paragraph()
+    p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_sub.paragraph_format.space_after = Pt(18)
+    run_sub = p_sub.add_run("PENJASKES (PJOK) - KELAS 1 SD\nMATERI: GERAK DASAR MANIPULATIF")
+    run_sub.font.size = Pt(13)
+    run_sub.font.bold = True
+    run_sub.font.color.rgb = SECONDARY_COLOR
+
+    # --- SECTION A: INFORMASI UMUM ---
+    add_heading_1("I. INFORMASI UMUM")
+    
+    info_table = doc.add_table(rows=8, cols=2)
+    info_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_table_borders(info_table)
+    
+    info_data = [
+        ("Nama Penyusun", ": Guru PJOK"),
+        ("Satuan Pendidikan", ": SD Negeri / Swasta"),
+        ("Fase / Kelas / Sem", ": A / Kelas 1 / Semester 1"),
+        ("Mata Pelajaran", ": Pendidikan Jasmani, Olahraga, dan Kesehatan (PJOK)"),
+        ("Materi Pokok", ": Gerak Dasar Manipulatif (Melempar, Menangkap, Menendang)"),
+        ("Model Pembelajaran", ": Project-Based Learning (PjBL) terintegrasi TPACK"),
+        ("Alokasi Waktu", ": 2 x 35 Menit (1 Pertemuan)"),
+        ("Target Peserta Didik", ": Peserta Didik Reguler / Tipikal (20-28 Siswa)")
+    ]
+    
+    for i, (label, val) in enumerate(info_data):
+        row = info_table.rows[i]
+        c1, c2 = row.cells[0], row.cells[1]
+        c1.width = Inches(2.2)
+        c2.width = Inches(4.07)
+        
+        p1 = c1.paragraphs[0]
+        p1.paragraph_format.space_after = Pt(2)
+        p1.paragraph_format.space_before = Pt(2)
+        r1 = p1.add_run(label)
+        r1.bold = True
+        
+        p2 = c2.paragraphs[0]
+        p2.paragraph_format.space_after = Pt(2)
+        p2.paragraph_format.space_before = Pt(2)
+        p2.add_run(val)
+        
+        set_cell_margins(c1, top=80, bottom=80)
+        set_cell_margins(c2, top=80, bottom=80)
+        if i % 2 == 0:
+            set_cell_background(c1, HEX_LIGHT_BG)
+            set_cell_background(c2, HEX_LIGHT_BG)
+
+    # --- SECTION B: KOMPONEN INTI ---
+    add_heading_1("II. KOMPONEN INTI")
+    
+    add_heading_2("A. Capaian Pembelajaran (CP) & Profil Pelajar Pancasila")
+    p = doc.add_paragraph()
+    p.add_run("• Capaian Pembelajaran: ").bold = True
+    p.add_run("Peserta didik dapat menunjukkan kemampuan dalam meniru dan mempraktikkan variasi pola gerak dasar manipulatif (melempar, menangkap, menendang) sesuai dengan potensi dan tahap perkembangannya.\n")
+    p.add_run("• Profil Pelajar Pancasila: ").bold = True
+    p.add_run("Mandiri, Gotong Royong, dan Bernalar Kritis.")
+
+    add_heading_2("B. Integrasi TPACK (Technological Pedagogical Content Knowledge)")
+    tpack_table = doc.add_table(rows=4, cols=2)
+    tpack_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_table_borders(tpack_table)
+    
+    tpack_headers = ["Domain TPACK", "Bentuk Integrasi Pembelajaran"]
+    hdr_cells = tpack_table.rows[0].cells
+    for j, text in enumerate(tpack_headers):
+        hdr_cells[j].text = text
+        hdr_cells[j].paragraphs[0].runs[0].bold = True
+        hdr_cells[j].paragraphs[0].runs[0].font.color.rgb = RGBColor(255, 255, 255)
+        set_cell_background(hdr_cells[j], HEX_PRIMARY)
+        set_cell_margins(hdr_cells[j], top=100, bottom=100)
+    hdr_cells[0].width = Inches(2.2)
+    hdr_cells[1].width = Inches(4.07)
+    
+    tpack_data = [
+        ("Technological Knowledge (TK)", "Penggunaan Video Pembelajaran Animasi (YouTube/Video Gerak), Proyektor, Smartphone/Tablet untuk merekam aksi visual siswa."),
+        ("Pedagogical Knowledge (PK)", "Penerapan Sintaks Model Project-Based Learning (PjBL) berbasis kooperatif dan permainan edukatif."),
+        ("Content Knowledge (CK)", "Konsep dasar gerak manipulatif (koordinasi mata-tangan & mata-kaki: melempar, menangkap, menendang bola kecil/sedang).")
+    ]
+    
+    for idx, (domain, desk) in enumerate(tpack_data, start=1):
+        row = tpack_table.rows[idx]
+        c1, c2 = row.cells[0], row.cells[1]
+        c1.width = Inches(2.2)
+        c2.width = Inches(4.07)
+        
+        p1 = c1.paragraphs[0]
+        r1 = p1.add_run(domain)
+        r1.bold = True
+        
+        p2 = c2.paragraphs[0]
+        p2.add_run(desk)
+        
+        set_cell_margins(c1, top=80, bottom=80)
+        set_cell_margins(c2, top=80, bottom=80)
+
+    add_heading_2("C. Tujuan Pembelajaran")
+    p = doc.add_paragraph()
+    p.add_run("1. Melalui tayangan video animasi gerak (TK), siswa mampu ").font.color.rgb = DARK_TEXT
+    p.add_run("identifikasi bentuk gerak melempar, menangkap, dan menendang").bold = True
+    p.add_run(" dengan tepat (C2).\n")
+    p.add_run("2. Melalui penugasan proyek kelompok (PjBL), siswa mampu ").font.color.rgb = DARK_TEXT
+    p.add_run("merancang dan merakit 'Wahana Lempar-Tangkap Ceria'").bold = True
+    p.add_run(" menggunakan media bola plastik/kertas bekas secara kreatif (P3).\n")
+    p.add_run("3. Melalui praktik permainan kelompok, siswa mampu ").font.color.rgb = DARK_TEXT
+    p.add_run("mempraktikkan kombinasi gerak dasar manipulatif").bold = True
+    p.add_run(" dengan percaya diri dan sportivitas tinggi (P4).\n")
+    p.add_run("4. Siswa mampu ").font.color.rgb = DARK_TEXT
+    p.add_run("bekerja sama dan menunjukkan sikap gotong royong").bold = True
+    p.add_run(" selama pembuatan proyek dan permainan (A3).")
+
+    add_heading_2("D. Sarana dan Prasarana")
+    p = doc.add_paragraph()
+    p.add_run("• Laptop, Proyektor, Speaker, Video Pembelajaran Animasi Gerak Manipulatif.\n")
+    p.add_run("• Bola plastik warna-warni, koran/kertas bekas (untuk dibentuk bola proyek), keranjang sampah bersih/kardus bekas.\n")
+    p.add_run("• Cone/pembatas area, Peluit, Stopwatch.")
+
+    # --- SECTION C: SINTAKS PEMBELAJARAN (PjBL + TPACK) ---
+    add_heading_1("III. KEGIATAN PEMBELAJARAN (SINTAKS PjBL + TPACK)")
+    
+    sintaks_table = doc.add_table(rows=7, cols=3)
+    sintaks_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_table_borders(sintaks_table)
+    
+    headers = ["Tahapan / Sintaks", "Uraian Kegiatan Pembelajaran", "Waktu"]
+    col_widths = [Inches(1.8), Inches(3.7), Inches(0.77)]
+    
+    hdr_cells = sintaks_table.rows[0].cells
+    for j, text in enumerate(headers):
+        hdr_cells[j].text = text
+        hdr_cells[j].paragraphs[0].runs[0].bold = True
+        hdr_cells[j].paragraphs[0].runs[0].font.color.rgb = RGBColor(255, 255, 255)
+        set_cell_background(hdr_cells[j], HEX_PRIMARY)
+        set_cell_margins(hdr_cells[j], top=100, bottom=100)
+        hdr_cells[j].width = col_widths[j]
+
+    kegiatan_data = [
+        ("Pendahuluan", 
+         "1. Guru membuka kelas dengan salam, doa bersama, dan mengecek kehadiran.\n"
+         "2. Apersepsi & Pengkondisian: Memasang lagu anak ceria (TPACK-TK).\n"
+         "3. Pemanasan Game: 'Tangkap Angin' (gerak bebas mengikuti ketukan peluit).\n"
+         "4. Guru menyampaikan tujuan pembelajaran dan gambaran proyek.", "10 Menit"),
+        
+        ("Sintaks 1 PjBL:\nPertanyaan Mendasar\n(TPACK: TK & CK)", 
+         "• Siswa mengamati video tayangan animasi melempar dan menangkap bola di layar proyektor (TPACK).\n"
+         "• Guru memberikan pemantik: 'Bagaimana cara melempar bola agar masuk persis ke dalam keranjang teman?'\n"
+         "• Siswa mendiskusikan jawaban secara interaktif.", "10 Menit"),
+         
+        ("Sintaks 2 PjBL:\nDesain Perencanaan Proyek\n(TPACK: PK & CK)", 
+         "• Siswa dibagi menjadi kelompok kecil (4-5 anak).\n"
+         "• Tiap kelompok diberi tugas merancang 'Wahana Target Ceria' (membuat bola dari kertas remas & menyusun keranjang target).\n"
+         "• Guru membagikan LKPD Proyek Bergambar yang mudah dipahami anak kelas 1.", "10 Menit"),
+         
+        ("Sintaks 3 PjBL:\nMenyusun Jadwal Proyek", 
+         "• Guru dan siswa menyepakati alokasi waktu pembuatan wahana target (10 menit) dan alokasi waktu uji coba uji gerak (20 menit).", "5 Menit"),
+         
+        ("Sintaks 4 PjBL:\nMemonitor Proyek &\nKeaktifan Siswa", 
+         "• Siswa bersama kelompok meremas kertas bekas menjadi bola dan menghias keranjang target.\n"
+         "• Guru memantau, mendampingi, dan merekam aktivitas siswa menggunakan smartphone/tablet untuk bahan evaluasi visual (TPACK).", "10 Menit"),
+         
+        ("Sintaks 5 & 6 PjBL:\nPengujian Hasil & Evaluasi Proyek\n(Penutup)", 
+         "• Uji Coba Proyek: Setiap kelompok mempraktikkan melempar dan menangkap bola buatan ke target kardus secara bergantian.\n"
+         "• Refleksi & Feedback: Guru menampilkan rekaman video/foto singkat aksi siswa di proyektor (TPACK) lalu memberi apresiasi dan koreksi teknik gerak.\n"
+         "• Pendinginan (Cooling Down) dan Doa Penutup.", "15 Menit")
+    ]
+
+    for idx, (sintaks, uraian, waktu) in enumerate(kegiatan_data, start=1):
+        row = sintaks_table.rows[idx]
+        c1, c2, c3 = row.cells[0], row.cells[1], row.cells[2]
+        
+        for j, c in enumerate([c1, c2, c3]):
+            c.width = col_widths[j]
+            set_cell_margins(c, top=80, bottom=80)
+            
+        p1 = c1.paragraphs[0]
+        r1 = p1.add_run(sintaks)
+        r1.bold = True
+        
+        p2 = c2.paragraphs[0]
+        p2.add_run(uraian)
+        
+        p3 = c3.paragraphs[0]
+        p3.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p3.add_run(waktu)
+
+    # --- SECTION D: ASESMEN / EVALUASI ---
+    add_heading_1("IV. ASESMEN PEMBELAJARAN")
+    
+    p = doc.add_paragraph()
+    p.add_run("1. Asesmen Sikap (Profil Pelajar Pancasila): ").bold = True
+    p.add_run("Observasi kerja sama (gotong royong) dan kemandirian saat membuat proyek.\n")
+    p.add_run("2. Asesmen Pengetahuan: ").bold = True
+    p.add_run("Tanya jawab lisan dan identifikasi gambar teknik melempar/menangkap pada LKPD.\n")
+    p.add_run("3. Asesmen Keterampilan (Unjuk Kerja): ").bold = True
+    p.add_run("Rubrik penilaian praktik gerak manipulatif (melempar bola tepat sasaran & menangkap bola dengan 2 tangan).")
+
+    # Rubrik Table
+    rubrik_table = doc.add_table(rows=4, cols=4)
+    rubrik_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_table_borders(rubrik_table)
+    
+    r_headers = ["Kriteria Gerak", "Sangat Baik (4)", "Baik (3)", "Perlu Bimbingan (1-2)"]
+    r_widths = [Inches(1.8), Inches(1.5), Inches(1.5), Inches(1.47)]
+    
+    for j, text in enumerate(r_headers):
+        cell = rubrik_table.rows[0].cells[j]
+        cell.text = text
+        cell.paragraphs[0].runs[0].bold = True
+        cell.paragraphs[0].runs[0].font.color.rgb = RGBColor(255, 255, 255)
+        set_cell_background(cell, SECONDARY_COLOR)
+        set_cell_margins(cell, top=100, bottom=100)
+        cell.width = r_widths[j]
+
+    rubrik_data = [
+        ("Melempar Bola", "Ayunan tangan sesuai, bola meluncur lurus ke target kardus.", "Bola terlempar tetapi arah masih sedikit melenceng.", "Belum mampu mengarahkan bola ke target."),
+        ("Menangkap Bola", "Posisi tangan membentuk wadah, menangkap bola dengan mulus.", "Menangkap bola tetapi masih sering terlepas.", "Belum berani/bisa menangkap bola yang datang."),
+        ("Kerja Sama Kelompok", "Sangat aktif membantu teman dan merapikan alat bersama.", "Ikut serta dalam proyek kelompok dengan cukup baik.", "Pasif dan perlu didorong guru untuk terlibat.")
+    ]
+
+    for idx, (kriter, sb, b, pb) in enumerate(rubrik_data, start=1):
+        row = rubrik_table.rows[idx]
+        for j, val in enumerate([kriter, sb, b, pb]):
+            c = row.cells[j]
+            c.width = r_widths[j]
+            set_cell_margins(c, top=80, bottom=80)
+            p = c.paragraphs[0]
+            if j == 0:
+                r = p.add_run(val)
+                r.bold = True
+            else:
+                p.add_run(val)
+
+    # --- SIGNATURE BLOCK ---
+    doc.add_paragraph().paragraph_format.space_before = Pt(14)
+    sig_table = doc.add_table(rows=2, cols=2)
+    sig_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    
+    c_left = sig_table.rows[0].cells[0]
+    c_right = sig_table.rows[0].cells[1]
+    c_left.width = Inches(3.13)
+    c_right.width = Inches(3.14)
+    
+    p_left = c_left.paragraphs[0]
+    p_left.add_run("Mengetahui,\nKepala Sekolah\n\n\n\n_________________________\nNIP. ....................................")
+    
+    p_right = c_right.paragraphs[0]
+    p_right.add_run(" Guru Mata Pelajaran PJOK\n\n\n\n_________________________\nNIP. ....................................")
+
+    # Save document
+    doc.save("Modul_Ajar_PJOK_Kelas1_Manipulatif_PjBL_TPACK.docx")
+    print("Modul Ajar successfully created.")
+
+create_modul_ajar()
